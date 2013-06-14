@@ -10,8 +10,6 @@ module Lims::ManagementApp
     class SamplePersistor < Lims::Core::Persistence::Persistor
       Model = Sample
 
-      # TODO : should be in the sample sequel persistor !
-
       def filter_attributes_on_save(attributes)
         taxon_id = attributes[:taxon_id]
         attributes.reject { |k,v| k == :taxon_id }.mash do |k,v|
@@ -22,28 +20,22 @@ module Lims::ManagementApp
           when :genotyping then [:genotyping_id, save_component(v)]
           when :scientific_name then [:scientific_taxon_id, taxonomy_primary_id(taxon_id, v, "scientific name")]
           when :common_name then [:common_taxon_id, taxonomy_primary_id(taxon_id, v, "common name")]
+          when :sample_type then [:sample_type_id, sample_type_id(v)] 
           else [k,v]
           end
         end
       end
 
-      # @param [Integer] taxon_id
-      # @param [String] name
-      # @param [String] type
-      # @return [Integer,Nil]
-      # Return the taxonomy id based on the taxon id, 
-      # the name and type in parameters.
-      # If an exception is raised, the save is cancelled
-      # and the transaction rollbacked.
-      def taxonomy_primary_id(taxon_id, name, type)
-        if taxon_id
-          persistor = @session.persistor_for(:taxonomy)
-          raise UnknownTaxonIdError, "Taxon ID #{taxon_id} unknown" unless persistor.valid_taxon_id?(taxon_id, type)
+      def sample_type_id(sample_type)
+        raise NoMethodError, "sample_type_id is undefined"
+      end
 
-          id = persistor.id_by_taxon_id_and_name(taxon_id, name, type)
-          raise NameTaxonIdMismatchError, "Taxon ID #{taxon_id} does not match the #{type} '#{name}'. Do you mean '#{persistor.name_by_taxon_id(taxon_id, type)}'?" unless id 
-          id
-        end
+      def sample_type(sample_type_id)
+        raise NoMethodError, "sample_type is undefined"
+      end
+
+      def taxonomy_primary_id(taxon_id, name, type)
+        raise NoMethodError, "taxonomy_primary_id is undefined"
       end
 
       # @param [Object] object
@@ -69,6 +61,7 @@ module Lims::ManagementApp
           when :genotyping_id then [:genotyping, @session.genotyping[v]]
           when :scientific_taxon_id then v ? [:scientific_name, @session.taxonomy[v].name] : [:scientific_name, nil]
           when :common_taxon_id then v ? [:common_name, @session.taxonomy[v].name] : [:common_name, nil]
+          when :sample_type_id then [:sample_type, sample_type(v)]
           else [k,v]
           end
         end.tap do |a|
